@@ -7,8 +7,11 @@ services:
       TZ: "Australia/Sydney"
       FTLCONF_dns_listeningMode: "ALL"
     volumes:
-      - "/home/admin/docker/pihole:/etc/pihole"
+      - pihole_data:/etc/pihole
     cap_add:
       - NET_ADMIN
     restart: unless-stopped
 
+volumes:
+  pihole_data:
+    name: pihole_data
