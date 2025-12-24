@@ -1,0 +1,14 @@
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    network_mode: host
+    environment:
+      TZ: "Australia/Sydney"
+      FTLCONF_dns_listeningMode: "ALL"
+    volumes:
+      - "/home/admin/docker/pihole:/etc/pihole"
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+
