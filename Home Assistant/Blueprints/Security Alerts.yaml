@@ -1,0 +1,146 @@
+blueprint:
+  name: Single Camera – Multi-Sensor Snapshot Notification
+  description: Sends a snapshot when any selected sensors trigger the selected camera.
+  domain: automation
+
+  input:
+    camera:
+      name: Camera
+      selector:
+        entity:
+          domain: camera
+
+    sensors:
+      name: Trigger Sensors
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+
+    notify_devices:
+      name: Devices to Notify
+      selector:
+        device:
+          integration: mobile_app
+          multiple: true
+
+    notification_delay:
+      name: Delay Before Notification (seconds)
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 86400
+
+    save_archive_file:
+      name: Save Archive Copy
+      default: false
+      selector:
+        boolean: {}
+
+    notification_title:
+      name: Title
+      default: Security Alert
+      selector:
+        text: {}
+
+    notification_message:
+      name: Message
+      default: "{{ camera_name }} detected motion."
+      selector:
+        text: {}
+
+    notification_color:
+      name: Accent Color
+      default: "#03a9f4"
+      selector:
+        text: {}
+
+    notification_icon:
+      name: Icon
+      default: mdi:cctv
+      selector:
+        text: {}
+
+    notification_sticky:
+      name: Sticky Notification
+      default: true
+      selector:
+        boolean: {}
+
+    notification_sound:
+      name: Notification Sound
+      default: default
+      selector:
+        text: {}
+
+    critical_ios:
+      name: Critical iOS Alert
+      default: false
+      selector:
+        boolean: {}
+
+    click_dashboard:
+      name: Click Action Dashboard URL
+      default: /lovelace
+      selector:
+        text: {}
+
+mode: parallel
+
+trigger:
+  - platform: state
+    entity_id: !input sensors
+    to: "on"
+
+variables:
+  camera_entity: !input camera
+  camera_name: "{{ states[camera_entity].name }}"
+  snapshot_path: "/media/snapshots/{{ states[camera_entity].object_id }}/last.jpg"
+  archive_path: "/media/snapshots/{{ states[camera_entity].object_id }}/archive/{{ now().strftime('%Y%m%d-%H%M%S') }}.jpg"
+  snapshot_access: "{{ snapshot_path | replace('/media','/media/local') }}"
+  save_archive: !input save_archive_file
+
+action:
+  - service: camera.snapshot
+    target:
+      entity_id: "{{ camera_entity }}"
+    data:
+      filename: "{{ snapshot_path }}"
+
+  - if:
+      - condition: template
+        value_template: "{{ save_archive }}"
+    then:
+      - service: camera.snapshot
+        target:
+          entity_id: "{{ camera_entity }}"
+        data:
+          filename: "{{ archive_path }}"
+
+  - delay:
+      seconds: !input notification_delay
+
+  - repeat:
+      for_each: !input notify_devices
+      sequence:
+        - service: >
+            notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+          data:
+            title: !input notification_title
+            message: !input notification_message
+            data:
+              channel: "{{ camera_name }} Snapshot"
+              group: "{{ camera_name }} Snapshot"
+              color: !input notification_color
+              sticky: !input notification_sticky
+              notification_icon: !input notification_icon
+              clickAction: !input click_dashboard
+              attachment:
+                url: "{{ snapshot_access }}"
+                content_type: JPEG
+              push:
+                sound:
+                  name: !input notification_sound
+                  volume: 1
+                  critical: !input critical_ios
