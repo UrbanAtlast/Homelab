@@ -1,15 +1,23 @@
 services:
   pihole:
-    image: pihole/pihole:latest
     container_name: pihole
-    network_mode: host
+    image: pihole/pihole:latest
+    network_mode: "host"
+
     environment:
-      TZ: "Australia/Sydney"
-      FTLCONF_dns_listeningMode: "ALL"
+      TZ: 'Australia/Sydney'
+      FTLCONF_dns_listeningMode: 'ALL'
+      FTLCONF_misc_etc_dnsmasq_d: 'true'
+
     volumes:
       - pihole_data:/etc/pihole
+      - /home/admin/docker/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+
     cap_add:
       - NET_ADMIN
+      - SYS_TIME
+      - SYS_NICE
+
     restart: unless-stopped
 
 volumes:
