@@ -22,4 +22,3 @@ services:
 
 volumes:
   pihole_data:
-    name: pihole_data
