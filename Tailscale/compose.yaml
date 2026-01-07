@@ -1,0 +1,15 @@
+services:
+  tailscale:
+    container_name: tailscale
+    image: tailscale/tailscale
+    network_mode: host
+
+    volumes:
+      - /var/lib:/var/lib
+      - /dev/net/tun:/dev/net/tun
+
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    restart: unless-stopped
